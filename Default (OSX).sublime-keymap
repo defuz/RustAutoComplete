@@ -1,0 +1,5 @@
+[
+    {
+        "keys": ["f2"], "command": "rust_goto_definition"
+    }
+]
