@@ -22,7 +22,9 @@ I have only tested this on Linux (Ubuntu 14.04). It may work on Mac / Windows.
 https://sublime.wbond.net/packages/Rust
 2. Clone and build the auto completion tool racer:
 https://github.com/phildawes/racer
-3. Configure the plugin to be able to find the racer executable and
+3. Install the package through package control (or clone from git if you prefer):
+https://sublime.wbond.net/packages/RustAutoComplete
+4. Configure the plugin to be able to find the racer executable and
 Rust source code. Create a file called RustAutoComplete.sublime-settings
 in your Packages/User directory, using below as a template:
 
