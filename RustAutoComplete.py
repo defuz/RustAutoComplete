@@ -1,4 +1,4 @@
-import os, sublime, sublime_plugin
+import os, sublime, sublime_plugin, subprocess
 from subprocess import Popen, PIPE
 
 settings = None
@@ -63,7 +63,11 @@ def run_racer(view, cmd_list):
     env['RUST_SRC_PATH'] = env_path
 
     # Run racer
-    process = Popen(cmd_list, stdout=PIPE, env=env)
+    startupinfo = None
+    if os.name == 'nt':
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    process = Popen(cmd_list, stdout=PIPE, env=env, startupinfo=startupinfo)
     (output, err) = process.communicate()
     exit_code = process.wait()
 
