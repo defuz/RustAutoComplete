@@ -1,4 +1,7 @@
-import os, sublime, sublime_plugin, subprocess
+import os
+import sublime
+import sublime_plugin
+import subprocess
 from subprocess import Popen, PIPE
 
 settings = None
