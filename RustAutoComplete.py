@@ -42,6 +42,12 @@ class Result:
         self.path = parts[3]
         self.type = parts[4]
 
+
+def expand_all(paths):
+    return [os.path.expanduser(path)
+            for path in paths]
+
+
 def run_racer(view, cmd_list):
     # Retrieve the entire buffer
     region = sublime.Region(0, view.size())
@@ -58,7 +64,8 @@ def run_racer(view, cmd_list):
 
     # Copy the system environment and add the source search
     # paths for racer to it.
-    env_path = ":".join(settings.search_paths)
+    expanded_search_paths = expand_all(settings.search_paths)
+    env_path = ":".join(expanded_search_paths)
     env = os.environ.copy()
     env['RUST_SRC_PATH'] = env_path
 
