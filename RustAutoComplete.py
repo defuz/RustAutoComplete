@@ -129,11 +129,11 @@ class RustAutocomplete(sublime_plugin.EventListener):
                 results = []
                 for result in raw_results:
                     result = "{0}\t{1} ({2})".format(result.completion, result.type,
-                        os.path.basename(result.path)), result.completion
+                                                     os.path.basename(result.path)), result.completion
                     results.append(result)
 
                 if len(results) > 0:
-                    #return list(set(results))
+                    # return list(set(results))
                     return (list(set(results)), sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
             except:
                 print("Unable to find racer executable (check settings)")
