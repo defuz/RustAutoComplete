@@ -1,9 +1,14 @@
-import os, sublime, sublime_plugin, subprocess
+import os
+import sublime
+import sublime_plugin
+import subprocess
 from subprocess import Popen, PIPE
 
 settings = None
 
+
 class Settings:
+
     def __init__(self):
         package_settings = sublime.load_settings("RustAutoComplete.sublime-settings")
         package_settings.add_on_change("racer", settings_changed)
@@ -17,15 +22,18 @@ class Settings:
         self.package_settings.clear_on_change("racer")
         self.package_settings.clear_on_change("search_paths")
 
+
 def plugin_loaded():
     global settings
     settings = Settings()
+
 
 def plugin_unloaded():
     global settings
     if settings != None:
         settings.unload()
         settings = None
+
 
 def settings_changed():
     global settings
@@ -34,13 +42,21 @@ def settings_changed():
         settings = None
     settings = Settings()
 
+
 class Result:
+
     def __init__(self, parts):
         self.completion = parts[0]
         self.row = int(parts[1])
         self.column = int(parts[2])
         self.path = parts[3]
         self.type = parts[4]
+
+
+def expand_all(paths):
+    return [os.path.expanduser(path)
+            for path in paths]
+
 
 def run_racer(view, cmd_list):
     # Retrieve the entire buffer
@@ -58,7 +74,8 @@ def run_racer(view, cmd_list):
 
     # Copy the system environment and add the source search
     # paths for racer to it.
-    env_path = ":".join(settings.search_paths)
+    expanded_search_paths = expand_all(settings.search_paths)
+    env_path = ":".join(expanded_search_paths)
     env = os.environ.copy()
     env['RUST_SRC_PATH'] = env_path
 
@@ -94,7 +111,9 @@ def run_racer(view, cmd_list):
         print("failed: exit_code:", exit_code, output)
     return results
 
+
 class RustAutocomplete(sublime_plugin.EventListener):
+
     def on_query_completions(self, view, prefix, locations):
         # Check if this is a Rust source file. This check
         # relies on the Rust syntax formatting extension
@@ -110,16 +129,18 @@ class RustAutocomplete(sublime_plugin.EventListener):
                 results = []
                 for result in raw_results:
                     result = "{0}\t{1} ({2})".format(result.completion, result.type,
-                        os.path.basename(result.path)), result.completion
+                                                     os.path.basename(result.path)), result.completion
                     results.append(result)
 
                 if len(results) > 0:
-                    #return list(set(results))
+                    # return list(set(results))
                     return (list(set(results)), sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
             except:
                 print("Unable to find racer executable (check settings)")
 
+
 class RustGotoDefinitionCommand(sublime_plugin.TextCommand):
+
     def run(self, edit):
         # Get the buffer location in correct format for racer
         row, col = self.view.rowcol(self.view.sel()[0].begin())
