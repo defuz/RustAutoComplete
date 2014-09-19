@@ -1,6 +1,9 @@
 import sys
 from unittest import main, TestCase
-from mock import Mock, patch, ANY
+try:
+    from mock import Mock, patch, ANY
+except ImportError:
+    pass
 
 
 class SublimeTest(TestCase):
@@ -31,6 +34,8 @@ class RunRacerTests(SublimeTest):
         self.settings = self.settings_patcher.start()
         self.print_patcher = patch("RustAutoComplete.print", create=True)
         self.printer = self.print_patcher.start()
+        self.open_patcher = patch("RustAutoComplete.open", create=True)
+        self.open = self.open_patcher.start()
 
     def set_defaults(self):
         self.process = Mock()
@@ -50,9 +55,9 @@ class RunRacerTests(SublimeTest):
         self.os_patcher.stop()
         self.settings_patcher.stop()
         self.print_patcher.stop()
+        self.open_patcher.stop()
 
-    @patch("RustAutoComplete.open", create=True)
-    def test_should_set_up_racer_command_line(self, _):
+    def test_should_set_up_racer_command_line(self):
         view = Mock()
         view.file_name.return_value = "/any-directory/file"
 
@@ -64,14 +69,7 @@ class RunRacerTests(SublimeTest):
                                       env=ANY,
                                       stdout=ANY)
 
-        self.popen.assert_called_with(ANY,
-                                      startupinfo=ANY,
-                                      env={
-                                          'RUST_SRC_PATH': 'expanded(/path/to/rust/sources):expanded(~/workspace/rust-src):expanded(~/../rust)'},
-                                      stdout=ANY)
-
-    @patch("RustAutoComplete.open", create=True)
-    def test_should_expand_all_search_paths(self, _):
+    def test_should_expand_all_search_paths(self):
         view = Mock()
         view.file_name.return_value = "/any-directory/file"
 
@@ -84,8 +82,7 @@ class RunRacerTests(SublimeTest):
                                           'RUST_SRC_PATH': 'expanded(/path/to/rust/sources):expanded(~/workspace/rust-src):expanded(~/../rust)'},
                                       stdout=ANY)
 
-    @patch("RustAutoComplete.open", create=True)
-    def test_should_print_problem_when_exit_code_is_one(self, _):
+    def test_should_print_problem_when_exit_code_is_one(self):
         view = Mock()
         view.file_name.return_value = "/any-directory/file"
         self.process.wait.return_value = 1
@@ -97,14 +94,12 @@ class RunRacerTests(SublimeTest):
                                         1,
                                         b'this\nis\nthe\nstdout')
 
-    @patch("RustAutoComplete.open", create=True)
-    def test_should_return_completions_when_exit_code_is_zero(self, _):
+    def test_should_return_completions_when_exit_code_is_zero(self):
         view = Mock()
         view.file_name.return_value = "/any-directory/file"
         self.process.wait.return_value = 0
         self.process.communicate.return_value = (b"MATCH glob,80,7,/home/hein/git/rust/src/libglob/lib.rs,statement",
                                                  b"this\nis\nthe\nstderr")
-
 
         from RustAutoComplete import run_racer
         results = run_racer(view, ["any", "racer", "commands"])
@@ -117,28 +112,24 @@ class RunRacerTests(SublimeTest):
         self.assertEqual(single_result.completion, "glob")
         self.assertEqual(single_result.type, "statement")
 
-    @patch("RustAutoComplete.open", create=True)
-    def test_should_not_return_completions_when_output_is_unexpected(self, _):
+    def test_should_not_return_completions_when_output_is_unexpected(self):
         view = Mock()
         view.file_name.return_value = "/any-directory/file"
         self.process.wait.return_value = 0
         self.process.communicate.return_value = (b"This does not start with 'MATCH '",
                                                  b"this\nis\nthe\nstderr")
 
-
         from RustAutoComplete import run_racer
         results = run_racer(view, ["any", "racer", "commands"])
 
         self.assertEqual(results, [])
 
-    @patch("RustAutoComplete.open", create=True)
-    def test_should_skip_match_when_it_is_from_the_view_file(self, _):
+    def test_should_skip_match_when_it_is_from_the_view_file(self):
         view = Mock()
         view.file_name.return_value = "/any-directory/file"
         self.process.wait.return_value = 0
         self.process.communicate.return_value = (b"MATCH glob,80,7,/any-directory/file,statement",
                                                  b"this\nis\nthe\nstderr")
-
 
         from RustAutoComplete import run_racer
         results = run_racer(view, ["any", "racer", "commands"])
