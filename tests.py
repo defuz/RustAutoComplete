@@ -69,12 +69,6 @@ class RunRacerTests(SublimeTest):
                                       env=ANY,
                                       stdout=ANY)
 
-        self.popen.assert_called_with(ANY,
-                                      startupinfo=ANY,
-                                      env={
-                                          'RUST_SRC_PATH': 'expanded(/path/to/rust/sources):expanded(~/workspace/rust-src):expanded(~/../rust)'},
-                                      stdout=ANY)
-
     def test_should_expand_all_search_paths(self):
         view = Mock()
         view.file_name.return_value = "/any-directory/file"
@@ -107,7 +101,6 @@ class RunRacerTests(SublimeTest):
         self.process.communicate.return_value = (b"MATCH glob,80,7,/home/hein/git/rust/src/libglob/lib.rs,statement",
                                                  b"this\nis\nthe\nstderr")
 
-
         from RustAutoComplete import run_racer
         results = run_racer(view, ["any", "racer", "commands"])
 
@@ -126,7 +119,6 @@ class RunRacerTests(SublimeTest):
         self.process.communicate.return_value = (b"This does not start with 'MATCH '",
                                                  b"this\nis\nthe\nstderr")
 
-
         from RustAutoComplete import run_racer
         results = run_racer(view, ["any", "racer", "commands"])
 
@@ -138,7 +130,6 @@ class RunRacerTests(SublimeTest):
         self.process.wait.return_value = 0
         self.process.communicate.return_value = (b"MATCH glob,80,7,/any-directory/file,statement",
                                                  b"this\nis\nthe\nstderr")
-
 
         from RustAutoComplete import run_racer
         results = run_racer(view, ["any", "racer", "commands"])
