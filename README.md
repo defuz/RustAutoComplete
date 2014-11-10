@@ -25,8 +25,9 @@ https://github.com/phildawes/racer
 3. Install the package through package control (or clone from git if you prefer):
 https://sublime.wbond.net/packages/RustAutoComplete
 4. Configure the plugin to be able to find the racer executable and
-Rust source code. Create a file called RustAutoComplete.sublime-settings
-in your Packages/User directory, using below as a template:
+Rust source code. Open menu
+`Preferences -> Package settings -> RustAutoComplete -> Settings - User`
+and edit the settings file using below as a template:
 
 ```
 {
