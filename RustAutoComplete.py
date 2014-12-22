@@ -69,7 +69,7 @@ def run_racer(view, cmd_list):
     temp_filename = "current.racertmp"
     current_path = os.path.dirname(view.file_name())
     temp_file_path = os.path.join(current_path, temp_filename)
-    with open(temp_file_path, "w") as cache_file:
+    with open(temp_file_path, "w", encoding='utf8') as cache_file:
         cache_file.write(content)
     cmd_list.insert(0, settings.racer_bin)
     cmd_list.append(temp_file_path)
@@ -113,7 +113,6 @@ def run_racer(view, cmd_list):
         print("failed: exit_code:", exit_code, output)
     return results
 
-
 class RustAutocomplete(sublime_plugin.EventListener):
 
     def on_query_completions(self, view, prefix, locations):
@@ -127,18 +126,19 @@ class RustAutocomplete(sublime_plugin.EventListener):
 
             try:
                 raw_results = run_racer(view, ["complete", str(row), str(col)])
-
-                results = []
-                for result in raw_results:
-                    result = "{0}\t{1} ({2})".format(result.completion, result.type,
-                                                     os.path.basename(result.path)), result.completion
-                    results.append(result)
-
-                if len(results) > 0:
-                    # return list(set(results))
-                    return (list(set(results)), sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
-            except:
+            except FileNotFoundError:
                 print("Unable to find racer executable (check settings)")
+                return
+
+            results = []
+            for result in raw_results:
+                result = "{0}\t{1} ({2})".format(result.completion, result.type,
+                                                 os.path.basename(result.path)), result.completion
+                results.append(result)
+            if len(results) > 0:
+                # return list(set(results))
+                return (list(set(results)), sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+
 
 
 class RustGotoDefinitionCommand(sublime_plugin.TextCommand):
