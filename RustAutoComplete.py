@@ -61,13 +61,57 @@ def expand_all(paths):
             for path in paths]
 
 
+def determine_save_dir(view):
+    # If we return None then it will fall back on the system tmp directory
+    save_dir = None
+
+    # Try to save to the same directory the file is saved in
+    if view.file_name() is not None:
+        save_dir = os.path.dirname(view.file_name())
+    
+    # If the file has not been saved, and the window has a folder open,
+    # try to treat the main folder as if it were a cargo project
+    source_folder = ""
+    if len(view.window().folders()) > 0:
+        source_folder = os.path.join(view.window().folders()[0], "src")
+    if save_dir is None and os.path.isdir(source_folder):
+        save_dir = source_folder
+
+    # If nothing else has worked, look at the folders that other open files are in
+    if save_dir is None:
+        paths = [view.file_name() for view in view.window().views() if view.file_name() is not None]
+        # We only care about open rust files
+        paths = [path for path in paths if path[-3:] == ".rs"]
+        directories = [os.path.dirname(path) for path in paths]
+        if len(directories) == 0:
+            return None
+
+        # Count the frequency of occurance of each path
+        dirs = {}
+        for item in directories:
+            if item not in dirs:
+                dirs[item] = 1
+            else:
+                dirs[item] += 1
+
+        # Use the most common path
+        save_dir = max(dirs.keys(), key=(lambda key: dirs[key]))
+
+    return save_dir
+
+
 def run_racer(view, cmd_list):
     # Retrieve the entire buffer
     region = sublime.Region(0, view.size())
     content = view.substr(region)
 
+    # Figure out where to save the temp file so that racer can do
+    # autocomplete based on other user files
+    save_dir = determine_save_dir(view)
+    print(save_dir)
+
     # Save that buffer to a temporary file for racer to use
-    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, dir=save_dir)
     temp_file_path = temp_file.name
     temp_file.write(content)
     temp_file.close()
@@ -75,7 +119,7 @@ def run_racer(view, cmd_list):
     cmd_list.append(temp_file_path)
 
     # Copy the system environment and add the source search
-    # paths for racer to it.
+    # paths for racer to it
     expanded_search_paths = expand_all(settings.search_paths)
     env_path = ":".join(expanded_search_paths)
     env = os.environ.copy()
@@ -137,7 +181,8 @@ class RustAutocomplete(sublime_plugin.EventListener):
                 results.append(result)
             if len(results) > 0:
                 # return list(set(results))
-                return (list(set(results)), sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
+                return (list(set(results)),
+                        sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
 
 
@@ -153,7 +198,9 @@ class RustGotoDefinitionCommand(sublime_plugin.TextCommand):
         if len(results) == 1:
             result = results[0]
             path = result.path
-            # On Windows the racer will return the paths without the drive letter and we need the letter for the open_file to work.
-            if platform.system() == 'Windows' and not re.compile('^\w\:').match(path): path = 'c:' + path
+            # On Windows the racer will return the paths without the drive
+            # letter and we need the letter for the open_file to work.
+            if platform.system() == 'Windows' and not re.compile('^\w\:').match(path):
+                path = 'c:' + path
             encoded_path = "{0}:{1}:{2}".format(path, result.row, result.column)
             self.view.window().open_file(encoded_path, sublime.ENCODED_POSITION)
