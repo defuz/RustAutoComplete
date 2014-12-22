@@ -111,7 +111,7 @@ def run_racer(view, cmd_list):
     print(save_dir)
 
     # Save that buffer to a temporary file for racer to use
-    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, dir=save_dir)
+    temp_file = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, dir=save_dir)
     temp_file_path = temp_file.name
     temp_file.write(content)
     temp_file.close()
