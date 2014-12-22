@@ -4,6 +4,7 @@ import sublime_plugin
 import platform
 import re
 import subprocess
+import tempfile
 from subprocess import Popen, PIPE
 
 settings = None
@@ -66,11 +67,10 @@ def run_racer(view, cmd_list):
     content = view.substr(region)
 
     # Save that buffer to a temporary file for racer to use
-    temp_filename = "current.racertmp"
-    current_path = os.path.dirname(view.file_name())
-    temp_file_path = os.path.join(current_path, temp_filename)
-    with open(temp_file_path, "w", encoding='utf8') as cache_file:
-        cache_file.write(content)
+    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+    temp_file_path = temp_file.name
+    temp_file.write(content)
+    temp_file.close()
     cmd_list.insert(0, settings.racer_bin)
     cmd_list.append(temp_file_path)
 
