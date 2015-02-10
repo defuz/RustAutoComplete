@@ -106,6 +106,7 @@ def run_racer(view, cmd_list):
     # Retrieve the entire buffer
     region = sublime.Region(0, view.size())
     content = view.substr(region)
+    with_snippet = cmd_list[0] == "complete-with-snippet"
 
     # Figure out where to save the temp file so that racer can do
     # autocomplete based on other user files
@@ -148,7 +149,12 @@ def run_racer(view, cmd_list):
         for byte_line in output.splitlines():
             line = byte_line.decode("utf-8")
             if line.startswith(match_string):
-                parts = line[len(match_string):].split(';', 7)
+                if with_snippet:
+                    parts = line[len(match_string):].split(';', 7)
+                else:
+                    parts = line[len(match_string):].split(',', 6)
+                    parts.insert(1, "")
+
                 result = Result(parts)
                 if result.path == view.file_name():
                     continue
