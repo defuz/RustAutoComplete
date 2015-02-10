@@ -50,10 +50,12 @@ class Result:
 
     def __init__(self, parts):
         self.completion = parts[0]
-        self.row = int(parts[1])
-        self.column = int(parts[2])
-        self.path = parts[3]
-        self.type = parts[4]
+        self.snippet = parts[1]
+        self.row = int(parts[2])
+        self.column = int(parts[3])
+        self.path = parts[4]
+        self.type = parts[5]
+        self.context = parts[6]
 
 
 def expand_all(paths):
@@ -146,7 +148,7 @@ def run_racer(view, cmd_list):
         for byte_line in output.splitlines():
             line = byte_line.decode("utf-8")
             if line.startswith(match_string):
-                parts = line[len(match_string):].split(',', 6)
+                parts = line[len(match_string):].split(';', 7)
                 result = Result(parts)
                 if result.path == view.file_name():
                     continue
@@ -169,15 +171,22 @@ class RustAutocomplete(sublime_plugin.EventListener):
             row += 1
 
             try:
-                raw_results = run_racer(view, ["complete", str(row), str(col)])
+                raw_results = run_racer(view, ["complete-with-snippet", str(row), str(col)])
             except FileNotFoundError:
                 print("Unable to find racer executable (check settings)")
                 return
 
             results = []
+            lalign = 0;
+            ralign = 0;
             for result in raw_results:
-                result = "{0}\t{1} ({2})".format(result.completion, result.type,
-                                                 os.path.basename(result.path)), result.completion
+                result.middle = "{0} ({1})".format(result.type, os.path.basename(result.path))
+                lalign = max(lalign,len(result.completion)+len(result.middle))
+                ralign = max(ralign, len(result.context))
+
+            for result in raw_results:
+                context = result.context
+                result = "{0} {1:>{3}} : {2:{4}}".format(result.completion, result.middle, result.context, lalign - len(result.completion), ralign), result.snippet
                 results.append(result)
             if len(results) > 0:
                 # return list(set(results))
