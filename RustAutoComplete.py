@@ -123,10 +123,11 @@ def run_racer(view, cmd_list):
 
     # Copy the system environment and add the source search
     # paths for racer to it
-    expanded_search_paths = expand_all(settings.search_paths)
-    env_path = ":".join(expanded_search_paths)
     env = os.environ.copy()
-    env['RUST_SRC_PATH'] = env_path
+    expanded_search_paths = expand_all(settings.search_paths)
+    if 'RUST_SRC_PATH' in env:
+        expanded_search_paths.append(env['RUST_SRC_PATH'])
+    env['RUST_SRC_PATH'] = os.pathsep.join(expanded_search_paths)
 
     # Run racer
     startupinfo = None
