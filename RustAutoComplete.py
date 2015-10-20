@@ -111,7 +111,7 @@ def run_racer(view, cmd_list):
     # Figure out where to save the temp file so that racer can do
     # autocomplete based on other user files
     save_dir = determine_save_dir(view)
-    print(save_dir)
+    # print(save_dir)
 
     # Save that buffer to a temporary file for racer to use
     temp_file = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, dir=save_dir)
