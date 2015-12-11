@@ -70,7 +70,7 @@ def determine_save_dir(view):
     # Try to save to the same directory the file is saved in
     if view.file_name() is not None:
         save_dir = os.path.dirname(view.file_name())
-    
+
     # If the file has not been saved, and the window has a folder open,
     # try to treat the main folder as if it were a cargo project
     source_folder = ""
@@ -124,8 +124,11 @@ def run_racer(view, cmd_list):
     # Copy the system environment and add the source search
     # paths for racer to it
     expanded_search_paths = expand_all(settings.search_paths)
-    env_path = ":".join(expanded_search_paths)
     env = os.environ.copy()
+    origin_env_path = env.get('RUST_SRC_PATH')
+    if origin_env_path:
+        expanded_search_paths.append(origin_env_path)
+    env_path = ":".join(set(expanded_search_paths))
     env['RUST_SRC_PATH'] = env_path
 
     # Run racer
