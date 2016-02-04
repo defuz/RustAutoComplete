@@ -7,11 +7,11 @@ import subprocess
 import tempfile
 from subprocess import Popen, PIPE
 
+
 settings = None
 
 
 class Settings:
-
     def __init__(self):
         package_settings = sublime.load_settings("RustAutoComplete.sublime-settings")
         package_settings.add_on_change("racer", settings_changed)
@@ -47,7 +47,6 @@ def settings_changed():
 
 
 class Result:
-
     def __init__(self, parts):
         self.completion = parts[0]
         self.snippet = parts[1]
@@ -70,7 +69,7 @@ def determine_save_dir(view):
     # Try to save to the same directory the file is saved in
     if view.file_name() is not None:
         save_dir = os.path.dirname(view.file_name())
-    
+
     # If the file has not been saved, and the window has a folder open,
     # try to treat the main folder as if it were a cargo project
     source_folder = ""
@@ -163,8 +162,8 @@ def run_racer(view, cmd_list):
         print("CMD: '%s' failed: exit_code:" % ' '.join(cmd_list), exit_code, output, err)
     return results
 
-class RustAutocomplete(sublime_plugin.EventListener):
 
+class RustAutocomplete(sublime_plugin.EventListener):
     def on_query_completions(self, view, prefix, locations):
         # Check if this is a Rust source file. This check
         # relies on the Rust syntax formatting extension
@@ -198,9 +197,7 @@ class RustAutocomplete(sublime_plugin.EventListener):
                         sublime.INHIBIT_WORD_COMPLETIONS | sublime.INHIBIT_EXPLICIT_COMPLETIONS)
 
 
-
 class RustGotoDefinitionCommand(sublime_plugin.TextCommand):
-
     def run(self, edit):
         # Get the buffer location in correct format for racer
         row, col = self.view.rowcol(self.view.sel()[0].begin())
