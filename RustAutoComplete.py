@@ -81,7 +81,7 @@ def determine_save_dir(view):
 
     # If nothing else has worked, look at the folders that other open files are in
     if save_dir is None:
-        paths = [view.file_name() for view in view.window().views() if view.file_name() is not None]
+        paths = [v.file_name() for v in view.window().views() if v.file_name() is not None]
         # We only care about open rust files
         paths = [path for path in paths if path[-3:] == ".rs"]
         directories = [os.path.dirname(path) for path in paths]
@@ -111,7 +111,6 @@ def run_racer(view, cmd_list):
     # Figure out where to save the temp file so that racer can do
     # autocomplete based on other user files
     save_dir = determine_save_dir(view)
-    print(save_dir)
 
     # Save that buffer to a temporary file for racer to use
     temp_file = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, dir=save_dir)
@@ -133,11 +132,9 @@ def run_racer(view, cmd_list):
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    process = Popen(cmd_list, stdout=PIPE, env=env, startupinfo=startupinfo)
+    process = Popen(cmd_list, stdout=PIPE, stderr=PIPE, env=env, startupinfo=startupinfo)
     (output, err) = process.communicate()
     exit_code = process.wait()
-
-#    print(output)
 
     # Remove temp file
     os.remove(temp_file_path)
@@ -162,7 +159,7 @@ def run_racer(view, cmd_list):
                     result.path = view.file_name()
                 results.append(result)
     else:
-        print("failed: exit_code:", exit_code, output)
+        print("CMD: '%s' failed: exit_code:" % ' '.join(cmd_list), exit_code, output, err)
     return results
 
 class RustAutocomplete(sublime_plugin.EventListener):
