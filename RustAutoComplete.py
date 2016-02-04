@@ -1,7 +1,6 @@
 import os
 import sublime
 import sublime_plugin
-import platform
 import re
 import subprocess
 import tempfile
@@ -210,7 +209,7 @@ class RustGotoDefinitionCommand(sublime_plugin.TextCommand):
             path = result.path
             # On Windows the racer will return the paths without the drive
             # letter and we need the letter for the open_file to work.
-            if platform.system() == 'Windows' and not re.compile('^\w\:').match(path):
+            if sublime.platform() == 'windows' and not re.compile('^\w\:').match(path):
                 path = 'c:' + path
             encoded_path = "{0}:{1}:{2}".format(path, result.row, result.column)
             self.view.window().open_file(encoded_path, sublime.ENCODED_POSITION)
