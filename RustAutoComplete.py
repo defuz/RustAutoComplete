@@ -131,7 +131,7 @@ def run_racer(view, cmd_list):
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    process = Popen(cmd_list, stdout=PIPE, stderr=PIPE, env=env, startupinfo=startupinfo)
+    process = Popen(cmd_list, stdout=PIPE, stderr=PIPE, env=env, startupinfo=startupinfo, shell=True)
     (output, err) = process.communicate()
     exit_code = process.wait()
 
