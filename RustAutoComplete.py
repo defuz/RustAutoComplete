@@ -14,15 +14,15 @@ class Settings:
     def __init__(self):
         package_settings = sublime.load_settings("RustAutoComplete.sublime-settings")
         package_settings.add_on_change("racer", settings_changed)
-        package_settings.add_on_change("search_paths", settings_changed)
+        package_settings.add_on_change("cargo_home", settings_changed)
 
         self.racer_bin = package_settings.get("racer", "racer")
-        self.search_paths = package_settings.get("search_paths", [])
+        self.cargo_home = package_settings.get("cargo_home", os.environ.get("CARGO_HOME", ""))
         self.package_settings = package_settings
 
     def unload(self):
         self.package_settings.clear_on_change("racer")
-        self.package_settings.clear_on_change("search_paths")
+        self.package_settings.clear_on_change("cargo_home")
 
 
 def plugin_loaded():
@@ -54,11 +54,6 @@ class Result:
         self.path = parts[4]
         self.type = parts[5]
         self.context = parts[6]
-
-
-def expand_all(paths):
-    return [os.path.expanduser(path)
-            for path in paths]
 
 
 def determine_save_dir(view):
@@ -118,13 +113,8 @@ def run_racer(view, cmd_list):
     cmd_list.insert(0, settings.racer_bin)
     cmd_list.append(temp_file_path)
 
-    # Copy the system environment and add the source search
-    # paths for racer to it
-    env = os.environ.copy()
-    expanded_search_paths = expand_all(settings.search_paths)
-    if 'RUST_SRC_PATH' in env:
-        expanded_search_paths.append(env['RUST_SRC_PATH'])
-    env['RUST_SRC_PATH'] = os.pathsep.join(expanded_search_paths)
+    # Copy the system environment and add cargo home
+    env['CARGO_HOME'] = settings.cargo_home
 
     # Run racer
     startupinfo = None
