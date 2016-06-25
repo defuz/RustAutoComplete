@@ -43,5 +43,26 @@ and edit the settings file using below as a template:
 }
 ```
 
+5. (Optional) Set autocomplete to trigger on '.' and ':'.
+Open `Preferences -> Settings - User` and add this entry:
+
+```
+  "auto_complete_triggers": [ {"selector": "source.rust", "characters": ".:"} ],
+```
+
+6. (Optional) Set a keybinding for triggering autocomplete (the Linux default is `alt+/`, which isn't common elsewhere).
+Open `Preferences -> Key Bindings - User` and add these entries (for a `Ctrl+Space` trigger):
+
+```
+    { "keys": ["ctrl+space"], "command": "auto_complete" },
+    { "keys": ["ctrl+space"], "command": "replace_completion_with_auto_complete", "context":
+        [
+            { "key": "last_command", "operator": "equal", "operand": "insert_best_completion" },
+            { "key": "auto_complete_visible", "operator": "equal", "operand": false },
+            { "key": "setting.tab_completion", "operator": "equal", "operand": true }
+        ]
+    },
+```
+
 ## Contact
 https://github.com/glennw/RustAutoComplete
