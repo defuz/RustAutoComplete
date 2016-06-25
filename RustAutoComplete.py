@@ -60,45 +60,39 @@ def expand_all(paths):
     return [os.path.expanduser(path)
             for path in paths]
 
+def determine_context_path(view):
+    """Returns a path suitable for racer's first input-file argument.
+       - Ideally, this is the path of an actual file on disk.
+       - If the open file hasn't been saved, then the path should be to a (non-existent)
+         hypothetical path near the user's other rust modules; racer will find the Cargo
+         root if possible and provide completions from the user's modules.
+       - If all else fails, we can provide a dummy name like '-' (we always provide a
+         'substitute' file over stdin, so racer doesn't actually try to read it)."""
 
-def determine_save_dir(view):
-    # If we return None then it will fall back on the system tmp directory
-    save_dir = None
-
-    # Try to save to the same directory the file is saved in
+    # If the current view has a path, then we can use it directly (first case)
     if view.file_name() is not None:
-        save_dir = os.path.dirname(view.file_name())
+        return view.file_name()
 
-    # If the file has not been saved, and the window has a folder open,
-    # try to treat the main folder as if it were a cargo project
-    source_folder = ""
-    if len(view.window().folders()) > 0:
-        source_folder = os.path.join(view.window().folders()[0], "src")
-    if save_dir is None and os.path.isdir(source_folder):
-        save_dir = source_folder
+    # Otherwise, we try to assume a path based on other open documents
+    paths = [v.file_name() for v in view.window().views() if v.file_name() is not None]
+    # We only care about open rust files
+    paths = [path for path in paths if path[-3:] == ".rs"]
+    directories = [os.path.join(os.path.dirname(path), "_transient.rs") for path in paths]
 
-    # If nothing else has worked, look at the folders that other open files are in
-    if save_dir is None:
-        paths = [v.file_name() for v in view.window().views() if v.file_name() is not None]
-        # We only care about open rust files
-        paths = [path for path in paths if path[-3:] == ".rs"]
-        directories = [os.path.dirname(path) for path in paths]
-        if len(directories) == 0:
-            return None
+    # Dummy path (third case)
+    if len(directories) == 0:
+        return "-"
 
-        # Count the frequency of occurance of each path
-        dirs = {}
-        for item in directories:
-            if item not in dirs:
-                dirs[item] = 1
-            else:
-                dirs[item] += 1
+    # Count the frequency of occurance of each path
+    dirs = {}
+    for item in directories:
+        if item not in dirs:
+            dirs[item] = 1
+        else:
+            dirs[item] += 1
 
-        # Use the most common path
-        save_dir = max(dirs.keys(), key=(lambda key: dirs[key]))
-
-    return save_dir
-
+    # Use the most common path
+    return max(dirs.keys(), key=(lambda key: dirs[key]))
 
 def run_racer(view, cmd_list):
     # Retrieve the entire buffer
@@ -106,17 +100,20 @@ def run_racer(view, cmd_list):
     content = view.substr(region)
     with_snippet = cmd_list[0] == "complete-with-snippet"
 
-    # Figure out where to save the temp file so that racer can do
-    # autocomplete based on other user files
-    save_dir = determine_save_dir(view)
-
-    # Save that buffer to a temporary file for racer to use
-    temp_file = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, dir=save_dir)
-    temp_file_path = temp_file.name
-    temp_file.write(content)
-    temp_file.close()
     cmd_list.insert(0, settings.racer_bin)
-    cmd_list.append(temp_file_path)
+
+    # We always have a 'context path' which is ideally near the user's other rust modules.
+    # Racer echos this in output (even if it is a dummy name) to indicate matches within the
+    # open document. Note that this does not always point to an existent file.
+    context_path = determine_context_path(view)
+
+    # We provide the context path as the (required) primary input (but it isn't read; see next arg).
+    cmd_list.append(context_path)
+    # The optional last argument to find-definition and complete-with-snippet is the [substitute_file],
+    # i.e. the file to use for actual text content. '-' is a magic value that means stdin. So, we have a
+    # command line like `racer ??? context_path/ - where context_path/ may or may not exist (we provide its 
+    # presumed content over stdin).
+    cmd_list.append("-")
 
     # Copy the system environment and add the source search
     # paths for racer to it
@@ -131,12 +128,9 @@ def run_racer(view, cmd_list):
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    process = Popen(cmd_list, stdout=PIPE, stderr=PIPE, env=env, startupinfo=startupinfo)
-    (output, err) = process.communicate()
+    process = Popen(cmd_list, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env, startupinfo=startupinfo)
+    (output, err) = process.communicate(input=content.encode("utf-8"))
     exit_code = process.wait()
-
-    # Remove temp file
-    os.remove(temp_file_path)
 
     # Parse results
     results = []
@@ -152,10 +146,6 @@ def run_racer(view, cmd_list):
                     parts.insert(1, "")
 
                 result = Result(parts)
-                if result.path == view.file_name():
-                    continue
-                if result.path == temp_file_path:
-                    result.path = view.file_name()
                 results.append(result)
     else:
         print("CMD: '%s' failed: exit_code:" % ' '.join(cmd_list), exit_code, output, err)
