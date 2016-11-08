@@ -1,4 +1,5 @@
 import os
+import platform
 import sublime
 import sublime_plugin
 import re
@@ -100,6 +101,33 @@ def determine_save_dir(view):
     return save_dir
 
 
+def sys_rust_src_path():
+    sys_src_paths = []
+    is_mac = lambda: platform.system() == 'Darwin'
+
+    env = os.environ.copy()
+    if 'RUST_SRC_PATH' in env:
+        sys_src_paths.append(env['RUST_SRC_PATH'])
+
+    # fix for Mac
+    # copy from https://github.com/int3h/SublimeFixMacPath
+    if is_mac():
+        command = "TERM=ansi CLICOLOR=\"\" SUBLIME=1 /usr/bin/login -fqpl $USER $SHELL -l -c 'TERM=ansi CLICOLOR=\"\" SUBLIME=1 printf \"%s\" \"$RUST_SRC_PATH\"'"
+
+        # Execute command with original environ. Otherwise, our changes to the PATH propogate down to
+        # the shell we spawn, which re-adds the system path & returns it, leading to duplicate values.
+        sys_src_path = Popen(command, stdout=PIPE, shell=True, env={}).stdout.read()
+
+        sys_src_path_string = sys_src_path.decode('utf-8')
+        # Remove ANSI control characters (see: http://www.commandlinefu.com/commands/view/3584/remove-color-codes-special-characters-with-sed )
+        sys_src_path_string = re.sub(r'\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]', '', sys_src_path_string)
+        sys_src_path_string = sys_src_path_string.strip().rstrip(':')
+
+        sys_src_paths.append(sys_src_path_string)
+
+    return sys_src_paths
+
+
 def run_racer(view, cmd_list):
     # Retrieve the entire buffer
     region = sublime.Region(0, view.size())
@@ -122,8 +150,7 @@ def run_racer(view, cmd_list):
     # paths for racer to it
     env = os.environ.copy()
     expanded_search_paths = expand_all(settings.search_paths)
-    if 'RUST_SRC_PATH' in env:
-        expanded_search_paths.append(env['RUST_SRC_PATH'])
+    expanded_search_paths.extend(sys_rust_src_path())
     env['RUST_SRC_PATH'] = os.pathsep.join(expanded_search_paths)
 
     # Run racer
