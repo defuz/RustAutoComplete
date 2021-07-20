@@ -4,6 +4,7 @@ import sublime_plugin
 import re
 import subprocess
 import tempfile
+import shutil
 from subprocess import Popen, PIPE
 
 
@@ -101,6 +102,11 @@ def determine_save_dir(view):
 
 
 def run_racer(view, cmd_list):
+    # Return if can't find racer
+    if shutil.which(settings.racer_bin) is None:
+        print("Unable to find racer executable (check settings)")
+        return []
+
     # Retrieve the entire buffer
     region = sublime.Region(0, view.size())
     content = view.substr(region)
@@ -172,10 +178,8 @@ class RustAutocomplete(sublime_plugin.EventListener):
             row, col = view.rowcol(locations[0])
             row += 1
 
-            try:
-                raw_results = run_racer(view, ["complete-with-snippet", str(row), str(col)])
-            except FileNotFoundError:
-                print("Unable to find racer executable (check settings)")
+            raw_results = run_racer(view, ["complete-with-snippet", str(row), str(col)])
+            if raw_results == []:
                 return
 
             results = []
